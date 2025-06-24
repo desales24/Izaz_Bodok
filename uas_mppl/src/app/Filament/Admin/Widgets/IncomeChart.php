@@ -8,23 +8,32 @@ use Illuminate\Support\Carbon;
 
 class IncomeChart extends ChartWidget
 {
-    protected static ?string $heading = 'Pemasukan 7 Hari Terakhir';
+    protected static ?string $heading = 'Pemasukan per Bulan (12 Bulan ke Depan)';
 
     protected function getData(): array
     {
-        $dates = collect(range(0, 6))->map(fn ($i) => now()->subDays(6 - $i)->format('Y-m-d'));
+        // Buat array 12 bulan ke depan
+        $months = collect(range(0, 11))->map(fn ($i) => now()->copy()->addMonths($i)->startOfMonth());
 
-        $payments = Payment::whereDate('created_at', '>=', now()->subDays(6))
-            ->where('status', 'lunas')
-            ->get()
-            ->groupBy(fn ($item) => $item->created_at->format('Y-m-d'));
+        // Ambil pembayaran status 'lunas' dari bulan ini sampai 12 bulan ke depan berdasarkan paid_at
+        $payments = Payment::where('status', 'lunas')
+            ->whereBetween('paid_at', [
+                now()->startOfMonth(),
+                now()->copy()->addMonths(11)->endOfMonth(),
+            ])
+            ->get();
 
+        // Kelompokkan pembayaran berdasarkan Y-m (bulan)
+        $grouped = $payments->groupBy(fn ($payment) => Carbon::parse($payment->paid_at)->format('Y-m'));
+
+        // Siapkan label & data
         $labels = [];
         $values = [];
 
-        foreach ($dates as $date) {
-            $labels[] = Carbon::parse($date)->translatedFormat('d M');
-            $values[] = ($payments[$date] ?? collect())->sum('amount');
+        foreach ($months as $month) {
+            $key = $month->format('Y-m');
+            $labels[] = $month->translatedFormat('M Y');
+            $values[] = ($grouped[$key] ?? collect())->sum('amount');
         }
 
         return [

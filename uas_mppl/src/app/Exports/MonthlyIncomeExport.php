@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -11,8 +10,9 @@ class MonthlyIncomeExport implements FromCollection, WithHeadings
 {
     public function collection()
     {
-        return DB::table('orders')
-            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as bulan, SUM(total) as total_pemasukan')
+        return DB::table('payments')
+            ->selectRaw('DATE_FORMAT(paid_at, "%Y-%m") as bulan, SUM(amount) as total_pemasukan')
+            ->where('status', 'lunas')
             ->groupBy('bulan')
             ->orderBy('bulan')
             ->get();

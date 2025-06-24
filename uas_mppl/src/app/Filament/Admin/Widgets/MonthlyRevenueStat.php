@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\Order;
+use App\Models\Payment;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Card;
 use Illuminate\Support\Carbon;
@@ -15,9 +15,10 @@ class MonthlyRevenueStat extends StatsOverviewWidget
         $cards = [];
 
         foreach (range(1, 12) as $month) {
-            $total = Order::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->sum('total');
+            $total = Payment::where('status', 'lunas')
+                ->whereMonth('paid_at', $month)
+                ->whereYear('paid_at', $year)
+                ->sum('amount');
 
             $monthName = Carbon::create()->month($month)->locale('id')->translatedFormat('F');
 
@@ -25,7 +26,7 @@ class MonthlyRevenueStat extends StatsOverviewWidget
                 ->color('success');
         }
 
-        // Card khusus untuk tombol Export yang lebih menarik
+        // Card tambahan untuk tombol export
         $cards[] = Card::make('Export Data Pemasukan', 'Download Laporan Excel')
             ->color('primary')
             ->icon('heroicon-o-document')
@@ -36,7 +37,7 @@ class MonthlyRevenueStat extends StatsOverviewWidget
             ])
             ->url(
                 route('export.pemasukan'),
-                true // Parameter kedua harus boolean untuk openInNewTab
+                true // Open in new tab
             );
 
         return $cards;

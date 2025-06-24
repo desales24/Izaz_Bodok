@@ -2,38 +2,50 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\User;
+use App\Models\Order;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
 class CustomerChart extends ChartWidget
 {
-    protected static ?string $heading = 'Customer Baru 7 Hari Terakhir';
+    protected static ?string $heading = 'Jumlah Pesanan per Bulan (12 Bulan ke Depan)';
 
     protected function getData(): array
     {
-        $dates = collect(range(0, 6))->map(fn ($i) => now()->subDays(6 - $i)->format('Y-m-d'));
+        // Ambil 12 bulan ke depan dari bulan ini
+        $months = collect(range(0, 11))->map(function ($i) {
+            return now()->copy()->addMonths($i)->startOfMonth();
+        });
 
-        $customers = User::role('customer') // hanya ambil user dengan role 'customer'
-            ->whereDate('created_at', '>=', now()->subDays(6))
-            ->get()
-            ->groupBy(fn ($item) => $item->created_at->format('Y-m-d'));
+        // Ambil semua pesanan dari bulan ini sampai 12 bulan ke depan
+        $orders = Order::whereBetween('order_time', [
+                now()->startOfMonth(),
+                now()->copy()->addMonths(11)->endOfMonth()
+            ])
+            ->get();
 
+        // Group berdasarkan bulan (format Y-m)
+        $grouped = $orders->groupBy(function ($order) {
+            return Carbon::parse($order->order_time)->format('Y-m');
+        });
+
+        // Siapkan label dan data
         $labels = [];
         $values = [];
 
-        foreach ($dates as $date) {
-            $labels[] = Carbon::parse($date)->translatedFormat('d M');
-            $values[] = ($customers[$date] ?? collect())->count();
+        foreach ($months as $month) {
+            $key = $month->format('Y-m');
+            $labels[] = $month->translatedFormat('M Y');
+            $values[] = isset($grouped[$key]) ? $grouped[$key]->count() : 0;
         }
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Customer Baru',
+                    'label' => 'Jumlah Pesanan',
                     'data' => $values,
-                    'backgroundColor' => '#60a5fa',
-                    'borderColor' => '#2563eb',
+                    'backgroundColor' => '#34d399',
+                    'borderColor' => '#059669',
                     'fill' => true,
                 ],
             ],
@@ -43,7 +55,7 @@ class CustomerChart extends ChartWidget
 
     protected function getType(): string
     {
-        return 'bar';
+        return 'bar'; // bisa diganti menjadi 'line' jika diinginkan
     }
 
     protected function getHeight(): string|int
