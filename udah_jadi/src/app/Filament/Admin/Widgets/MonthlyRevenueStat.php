@@ -14,6 +14,7 @@ class MonthlyRevenueStat extends StatsOverviewWidget
         $year = now()->year;
         $cards = [];
 
+        // Tambahkan 12 card pemasukan bulanan
         foreach (range(1, 12) as $month) {
             $total = Payment::where('status', 'lunas')
                 ->whereMonth('paid_at', $month)
@@ -26,7 +27,7 @@ class MonthlyRevenueStat extends StatsOverviewWidget
                 ->color('success');
         }
 
-        // Card tambahan untuk tombol export
+        // Tambahkan tombol Export Data Pemasukan
         $cards[] = Card::make('Export Data Pemasukan', 'Download Laporan Excel')
             ->color('primary')
             ->icon('heroicon-o-document')
@@ -35,10 +36,16 @@ class MonthlyRevenueStat extends StatsOverviewWidget
                 'class' => 'transform hover:scale-[1.01] transition-all cursor-pointer shadow-md',
                 'style' => 'background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);'
             ])
-            ->url(
-                route('export.pemasukan'),
-                true // Open in new tab
-            );
+            ->url(route('export.pemasukan'), true);
+
+        // Tambahkan tombol Export Pesanan Hari Ini
+        $cards[] = Card::make('Export Pesanan Hari Ini', 'Download Data Hari Ini')
+            ->color('primary')
+            ->icon('heroicon-o-document-arrow-down')
+            ->url(route('export.semua.pesanan', now()->toDateString()), true)
+            ->extraAttributes([
+                'class' => 'cursor-pointer hover:scale-[1.01] transition',
+            ]);
 
         return $cards;
     }

@@ -16,9 +16,9 @@ Livewire::setScriptRoute(function ($handle) {
 /*
 / END
 */
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
 use App\Models\Payment;
 
@@ -32,3 +32,19 @@ use Maatwebsite\Excel\Facades\Excel;
 Route::get('/export-pemasukan', function () {
     return Excel::download(new MonthlyIncomeExport, 'pemasukan-bulanan.xlsx');
 })->name('export.pemasukan');
+
+use App\Exports\OrderExport;
+
+Route::get('/export/semua-pesanan', function () {
+    return Excel::download(new OrderExport(), 'semua-pesanan.xlsx');
+})->name('export.semua.pesanan');
+
+Route::get('/', function () {
+    return view('components.pages.home');
+})->name('home');
+Route::get('/about', function () {
+    return view('components.pages.about');
+})->name('about');
+Route::get('/order', function () {
+    return view('components.pages.order');
+})->name('order');
